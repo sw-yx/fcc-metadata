@@ -31,7 +31,7 @@ mongoose.connect(mongouri);
 
 /// multer part
 var storage = multer.diskStorage({
-  destination: function(req, file, cb) {cb(null, 'uploads/');},
+  destination: function(req, file, cb) {cb(null, './uploads/');},
   filename: function(req, file, cb) {
     var getFileExt = function(fileName) {
       var fileExt = fileName.split(".");
@@ -44,12 +44,12 @@ var storage = multer.diskStorage({
 var multerUpload = multer({storage: storage});
 var uploadFile = multerUpload.single('userFile');
   app.post('/upload', function(req, res) {
-    uploadFile(req, res, function(err) {
-      if (err) {log.error(err);}
-      // Everything went fine 
       console.log('-------------------------------')
       console.log(req.file)
       console.log('-------------------------------')
+    uploadFile(req, res, function(err) {
+      if (err) {log.error(err);}
+      // Everything went fine 
       var fileDetails = {
         name: req.file.originalname,
         size: req.file.size,

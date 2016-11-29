@@ -1,84 +1,72 @@
-//
-// # SimpleServer
-//
-// A simple chat server using Socket.IO, Express, and Async.
-//
-var http = require('http');
-var path = require('path');
-
-var async = require('async');
-var socketio = require('socket.io');
 var express = require('express');
-
-//
-// ## SimpleServer `SimpleServer(obj)`
-//
-// Creates a new instance of SimpleServer with the following options:
-//  * `port` - The HTTP port to listen on. If `process.env.PORT` is set, _it overrides this value_.
-//
-var router = express();
-var server = http.createServer(router);
-var io = socketio.listen(server);
-
-router.use(express.static(path.resolve(__dirname, 'client')));
-var messages = [];
-var sockets = [];
-
-io.on('connection', function (socket) {
-    messages.forEach(function (data) {
-      socket.emit('message', data);
-    });
-
-    sockets.push(socket);
-
-    socket.on('disconnect', function () {
-      sockets.splice(sockets.indexOf(socket), 1);
-      updateRoster();
-    });
-
-    socket.on('message', function (msg) {
-      var text = String(msg || '');
-
-      if (!text)
-        return;
-
-      socket.get('name', function (err, name) {
-        var data = {
-          name: name,
-          text: text
-        };
-
-        broadcast('message', data);
-        messages.push(data);
-      });
-    });
-
-    socket.on('identify', function (name) {
-      socket.set('name', String(name || 'Anonymous'), function (err) {
-        updateRoster();
-      });
-    });
-  });
-
-function updateRoster() {
-  async.map(
-    sockets,
-    function (socket, callback) {
-      socket.get('name', callback);
-    },
-    function (err, names) {
-      broadcast('roster', names);
-    }
-  );
-}
-
-function broadcast(event, data) {
-  sockets.forEach(function (socket) {
-    socket.emit(event, data);
-  });
-}
-
-server.listen(process.env.PORT || 3000, process.env.IP || "0.0.0.0", function(){
-  var addr = server.address();
-  console.log("Chat server listening at", addr.address + ":" + addr.port);
+var path = require('path');
+var mongoose = require('mongoose');
+var Schema = mongoose.Schema;
+var log = require('npmlog');
+var fs = require('fs');
+var multer = require('multer');
+require('dotenv').config({
+  silent: true
 });
+
+var app = express();
+
+var fileSchema = new Schema({
+  name: String,
+  size: Number,
+  date: String
+});
+
+var File = mongoose.model('File', fileSchema);
+var mongouri = process.env.MONGOLAB_URI || "mongodb://" + process.env.IP + ":27017/file-meta";
+mongoose.connect(mongouri);
+
+ // The format follows as, alias to use for real path, also allows permission to such path.
+
+  app.set('views', path.join(__dirname, 'views'));
+  app.set('view engine', 'jade');
+
+  //app.route('/').get(function(req, res) {res.render('index');});
+  app.get('/',function(req, res) {res.render('index');});
+
+/// multer part
+var storage = multer.diskStorage({
+  destination: function(req, file, cb) {cb(null, 'uploads/');},
+  filename: function(req, file, cb) {
+    var getFileExt = function(fileName) {
+      var fileExt = fileName.split(".");
+      if (fileExt.length === 1 || (fileExt[0] === "" && fileExt.length === 2)) {return "";}
+      return fileExt.pop();
+    };
+    cb(null, Date.now() + '.' + getFileExt(file.originalname));
+  }
+});
+var multerUpload = multer({storage: storage});
+var uploadFile = multerUpload.single('userFile');
+  app.post('/upload', function(req, res) {
+    uploadFile(req, res, function(err) {
+      if (err) {log.error(err);}
+      // Everything went fine 
+      var fileDetails = {
+        name: req.file.originalname,
+        size: req.file.size,
+        date: new Date().toLocaleString(),
+        file: req.file.filename
+      };
+      // save file to db
+      var file = new File(fileDetails);
+      file.save(function(err, file) {
+        if (err) {log.error(err);throw err;}
+        log.info('Saved', file);
+      });
+      var filePath = "./uploads/" + req.file.filename; 
+      fs.unlinkSync(filePath);
+      res.send(fileDetails);
+    });
+  });
+
+
+
+//server
+  var port = process.env.PORT || 8080;
+  app.listen(port, function() {log.info('Express', 'Listening on port %s', port)})

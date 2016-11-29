@@ -6,8 +6,12 @@
   "author": "Mostafa Eweda <mo.eweda@gmail.com>",
   "dependencies": {
     "async": "~0.2.8",
+    "dotenv": "^2.0.0",
     "express": "^3.2.6",
+    "jade": "^1.11.0",
+    "mongoose": "^4.7.0",
     "multer": "^1.2.0",
+    "npmlog": "^4.0.1",
     "socket.io": "~0.9.14"
   },
   "scripts": {

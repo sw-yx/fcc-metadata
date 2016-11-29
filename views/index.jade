@@ -1,0 +1,16 @@
+
+
+block content
+  div(class="container-fluid")
+  
+    if (err)
+        div
+            h2(style = "color: red;")= err
+    h1(class="header")
+      | FreeCodeCamp API: File Metadata Microservice
+    h2 Upload file
+    form(role="form", action="/upload", method="post", enctype="multipart/form-data")
+        div(class="form-group")
+            label Upload File
+            input(type="file", name="userFile", id="myfile")
+            input(type='submit', name='send', id='sendFile')

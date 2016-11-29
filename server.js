@@ -47,6 +47,9 @@ var uploadFile = multerUpload.single('userFile');
     uploadFile(req, res, function(err) {
       if (err) {log.error(err);}
       // Everything went fine 
+      console.log('-------------------------------')
+      console.log(req.file)
+      console.log('-------------------------------')
       var fileDetails = {
         name: req.file.originalname,
         size: req.file.size,
